@@ -1,0 +1,346 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── AUTH & USERS ──────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN         // Full platform control
+  PHOTOGRAPHER  // Media specialist (upload, bulk upload, AI tagging, face indexing)
+  MEMBER        // Creates events/albums, social interaction, downloads
+  VIEWER        // Read-only public access
+}
+
+model User {
+  id              String    @id @default(cuid())
+  clerkId         String    @unique
+  email           String    @unique
+  name            String?
+  avatarUrl       String?
+
+  role            Role      @default(MEMBER)
+  isActive        Boolean   @default(true)
+  lastLoginAt     DateTime?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  ownedEvents         Event[]              @relation("EventOwner")
+  collaborations      EventCollaborator[]
+  albums              Album[]              @relation("CreatedAlbums")
+  media               Media[]              @relation("UploadedMedia")
+  likes               Like[]
+  favorites           Favorite[]
+  comments            Comment[]
+  notifications       Notification[]       @relation("RecipientNotifications")
+  faceIndexes         FaceIndex[]
+  auditLogs           AuditLog[]           @relation("ActorLogs")
+  bulkUploadJobs      BulkUploadJob[]
+
+  @@index([clerkId])
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// ─── EVENTS & COLLABORATION ────────────────────────────────────────────────
+
+model Event {
+  id            String              @id @default(cuid())
+  title         String
+  description   String?
+  coverImageUrl String?
+  isPublished   Boolean             @default(false)
+  
+  ownerId       String
+  owner         User                @relation("EventOwner", fields: [ownerId], references: [id])
+  collaborators EventCollaborator[]
+  albums        Album[]
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  
+  @@index([ownerId])
+  @@map("events")
+}
+
+enum CollaboratorRole {
+  EDITOR
+  VIEWER
+}
+
+model EventCollaborator {
+  id          String             @id @default(cuid())
+  eventId     String
+  userId      String
+  role        CollaboratorRole   @default(EDITOR)
+
+  invitedAt   DateTime           @default(now())
+  acceptedAt  DateTime?          // null = pending invitation
+  revokedAt   DateTime?          // non-null = access revoked
+
+  event       Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@index([eventId])
+  @@map("event_collaborators")
+}
+
+// ─── ALBUMS & MEDIA ────────────────────────────────────────────────────────
+
+model Album {
+  id             String          @id @default(cuid())
+  title          String
+  description    String?
+  
+  eventId        String
+  event          Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  creatorId      String
+  creator        User            @relation("CreatedAlbums", fields: [creatorId], references: [id])
+  
+  media          Media[]
+  bulkUploadJobs BulkUploadJob[]
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  
+  @@index([eventId])
+  @@index([creatorId])
+  @@map("albums")
+}
+
+model Media {
+  id            String          @id @default(cuid())
+  filename      String
+  s3Key         String          @unique
+  url           String
+  mimeType      String
+  size          Int
+  width         Int?
+  height        Int?
+  status        String          @default("PROCESSING") // PROCESSING, READY, FAILED
+  
+  albumId       String
+  album         Album           @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  uploaderId    String
+  uploader      User            @relation("UploadedMedia", fields: [uploaderId], references: [id])
+  
+  detectedFaces MediaFace[]
+  likes         Like[]
+  favorites     Favorite[]
+  comments      Comment[]
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  @@index([albumId])
+  @@index([uploaderId])
+  @@map("media")
+}
+
+// ─── SOCIAL ────────────────────────────────────────────────────────────────
+
+model Like {
+  id        String   @id @default(cuid())
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  @@unique([mediaId, userId])
+  @@index([userId])
+  @@map("likes")
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  @@unique([mediaId, userId])
+  @@index([userId])
+  @@map("favorites")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([mediaId])
+  @@index([userId])
+  @@map("comments")
+}
+
+// ─── FACE RECOGNITION ──────────────────────────────────────────────────────
+
+enum FaceIndexStatus {
+  PENDING
+  INDEXED
+  FAILED
+  DELETED
+}
+
+model FaceIndex {
+  id                  String           @id @default(cuid())
+  userId              String
+  rekognitionFaceId   String?          @unique
+  s3KeySample         String
+
+  status              FaceIndexStatus  @default(PENDING)
+  confidence          Float?
+  consentGivenAt      DateTime
+  failureReason       String?
+
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchedFaces        MediaFace[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("face_indexes")
+}
+
+model MediaFace {
+  id              String     @id @default(cuid())
+  mediaId         String
+  faceIndexId     String?                // null = unidentified face
+
+  confidence      Float
+  boundingBox     Json
+
+  createdAt       DateTime   @default(now())
+
+  media           Media      @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  faceIndex       FaceIndex? @relation(fields: [faceIndexId], references: [id], onDelete: SetNull)
+
+  @@index([mediaId])
+  @@index([faceIndexId])
+  @@map("media_faces")
+}
+
+// ─── BACKGROUND JOBS ───────────────────────────────────────────────────────
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model BulkUploadJob {
+  id               String      @id @default(cuid())
+  albumId          String
+  submittedById    String
+
+  totalFiles       Int
+  processedFiles   Int         @default(0)
+  failedFiles      Int         @default(0)
+  status           JobStatus   @default(PENDING)
+
+  errorLog         Json?
+
+  createdAt        DateTime    @default(now())
+  startedAt        DateTime?
+  completedAt      DateTime?
+
+  album            Album       @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  submittedBy      User        @relation(fields: [submittedById], references: [id])
+
+  @@index([submittedById])
+  @@index([albumId])
+  @@index([status])
+  @@map("bulk_upload_jobs")
+}
+
+// ─── AUDIT & NOTIFICATIONS ─────────────────────────────────────────────────
+
+enum AuditAction {
+  ROLE_CHANGE
+  USER_DEACTIVATED
+  USER_REACTIVATED
+  COLLABORATOR_ADDED
+  COLLABORATOR_REMOVED
+  COLLABORATOR_ROLE_CHANGED
+  EVENT_CREATED
+  EVENT_DELETED
+  EVENT_PUBLISHED
+  MEDIA_DELETED
+  BULK_UPLOAD_STARTED
+  BULK_UPLOAD_COMPLETED
+  FACE_INDEXED
+  FACE_DELETED
+  AI_TAG_TRIGGERED
+}
+
+model AuditLog {
+  id            String       @id @default(cuid())
+  actorId       String
+  action        AuditAction
+
+  entityType    String
+  entityId      String
+
+  metadata      Json?
+  ipAddress     String?
+
+  createdAt     DateTime     @default(now())
+
+  actor         User         @relation("ActorLogs", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum NotificationType {
+  COLLABORATION_INVITE
+  FACE_MATCH
+  BULK_UPLOAD_COMPLETE
+  ROLE_CHANGED
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  type        NotificationType
+  
+  title       String
+  message     String
+  
+  isRead      Boolean          @default(false)
+  
+  metadata    Json?
+  
+  createdAt   DateTime         @default(now())
+  
+  recipient   User             @relation("RecipientNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+  
+  @@index([recipientId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
