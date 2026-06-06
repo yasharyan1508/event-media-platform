@@ -1,118 +1,116 @@
-import { verifyWebhook } from "@clerk/nextjs/webhooks";
-import { NextRequest } from "next/server";
-import { prisma } from "@/src/Library/prisma";
-import { clerkClient } from "@clerk/nextjs/server";
-import { Role } from "@prisma/client";
+import { Webhook } from 'svix'
+import { headers } from 'next/headers'
+import { WebhookEvent } from '@clerk/nextjs/server'
+import { prisma } from '@/src/Library/prisma'
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export async function POST(req: Request) {
+  // You can find this in the Clerk Dashboard -> Webhooks -> choose the webhook
+  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
 
-export async function POST(req: NextRequest) {
+  if (!WEBHOOK_SECRET) {
+    throw new Error('Please add CLERK_WEBHOOK_SECRET from Clerk Dashboard to .env or .env.local')
+  }
+
+  // Get the headers
+  const headerPayload = await headers()
+  const svix_id = headerPayload.get("svix-id")
+  const svix_timestamp = headerPayload.get("svix-timestamp")
+  const svix_signature = headerPayload.get("svix-signature")
+
+  // If there are no headers, error out
+  if (!svix_id || !svix_timestamp || !svix_signature) {
+    return new Response('Error occured -- no svix headers', {
+      status: 400
+    })
+  }
+
+  // Get the body
+  const payload = await req.json()
+  const body = JSON.stringify(payload)
+
+  // Create a new Svix instance with your secret.
+  const wh = new Webhook(WEBHOOK_SECRET)
+
+  let evt: WebhookEvent
+
+  // Verify the payload with the headers
   try {
-    const evt = await verifyWebhook(req);
+    evt = wh.verify(body, {
+      "svix-id": svix_id,
+      "svix-timestamp": svix_timestamp,
+      "svix-signature": svix_signature,
+    }) as WebhookEvent
+  } catch (err) {
+    console.error('Error verifying webhook:', err)
+    return new Response('Error occured', {
+      status: 400
+    })
+  }
 
-    const eventType = evt.type;
+  const eventType = evt.type
 
-    // ─── user.created ─────────────────────────────────────────────────
-    if (eventType === "user.created") {
-      const { id, email_addresses, first_name, last_name, image_url } =
-        evt.data;
+  // 🔴 DEBUG ONLY: You can delete this console.log after testing
+  console.log(`\n✅ WEBHOOK RECEIVED: ${eventType}`);
 
-      const email = email_addresses[0]?.email_address;
-      if (!email) {
-        return new Response("No email address found", { status: 400 });
-      }
+  if (eventType === 'user.created' || eventType === 'user.updated') {
+    const { id, email_addresses, first_name, last_name, image_url } = evt.data
 
-      const name = [first_name, last_name].filter(Boolean).join(" ") || null;
+    const email = email_addresses?.[0]?.email_address
 
-      // Determine role: ADMIN if email matches ADMIN_EMAIL env var
-      const adminEmail = process.env.ADMIN_EMAIL;
-      const role: Role =
-        adminEmail && email.toLowerCase() === adminEmail.toLowerCase()
-          ? Role.ADMIN
-          : Role.MEMBER;
-
-      // Create user in database
-      const user = await prisma.user.create({
-        data: {
-          clerkId: id,
-          email,
-          name,
-          avatarUrl: image_url || null,
-          role,
-        },
-      });
-
-      // Sync role back to Clerk publicMetadata so it's available in session claims
-      const client = await clerkClient();
-      await client.users.updateUserMetadata(id, {
-        publicMetadata: { role: user.role },
-      });
-
-      console.log(
-        `[webhook] user.created: ${email} → role: ${user.role}`
-      );
-
-      return new Response("User created", { status: 200 });
+    if (!email) {
+      return new Response('Error: No email address provided in payload', { status: 400 })
     }
 
-    // ─── user.updated ─────────────────────────────────────────────────
-    if (eventType === "user.updated") {
-      const { id, email_addresses, first_name, last_name, image_url } =
-        evt.data;
+    // 🔴 DEBUG ONLY: You can delete this console.log after testing
+    console.log("Attempting database upsert for user:", id);
 
-      const email = email_addresses[0]?.email_address;
-      if (!email) {
-        return new Response("No email address found", { status: 400 });
-      }
-
-      const name = [first_name, last_name].filter(Boolean).join(" ") || null;
-
+    try {
       await prisma.user.upsert({
         where: { clerkId: id },
         update: {
           email,
-          name,
-          avatarUrl: image_url || null,
+          avatarUrl: image_url,
+          // ⚠️ NOTE: I commented out 'name' because it was not in your Prisma Studio screenshot.
+          // If you update your schema.prisma later to include 'name', you can uncomment this.
+          // name: [first_name, last_name].filter(Boolean).join(' ') || null,
         },
         create: {
           clerkId: id,
           email,
-          name,
-          avatarUrl: image_url || null,
-          role: Role.MEMBER,
+          avatarUrl: image_url,
+          isActive: true, // Assuming default active based on your schema
+          // name: [first_name, last_name].filter(Boolean).join(' ') || null,
         },
-      });
+      })
 
-      console.log(`[webhook] user.updated: ${email}`);
+      // 🔴 DEBUG ONLY: You can delete this console.log after testing
+      console.log("✅ USER SUCCESSFULLY SAVED TO DATABASE:", id);
 
-      return new Response("User updated", { status: 200 });
+    } catch (error) {
+      // 🟢 KEEP THIS FOREVER: It is best practice to log DB errors and return a 500 status 
+      // so Clerk knows the webhook failed and can retry it.
+      console.error('❌ PRISMA DATABASE ERROR:', error)
+      return new Response('Error', { status: 500 })
     }
-
-    // ─── user.deleted ─────────────────────────────────────────────────
-    if (eventType === "user.deleted") {
-      const { id } = evt.data;
-
-      if (!id) {
-        return new Response("No user ID found", { status: 400 });
-      }
-
-      // Soft delete — preserve relational data
-      await prisma.user.update({
-        where: { clerkId: id },
-        data: { isActive: false },
-      });
-
-      console.log(`[webhook] user.deleted (soft): clerkId=${id}`);
-
-      return new Response("User soft-deleted", { status: 200 });
-    }
-
-    // ─── Unhandled event ──────────────────────────────────────────────
-    console.log(`[webhook] unhandled event: ${eventType}`);
-    return new Response("Event received", { status: 200 });
-  } catch (err) {
-    console.error("[webhook] Error processing webhook:", err);
-    return new Response("Webhook processing failed", { status: 400 });
   }
+
+  if (eventType === 'user.deleted') {
+    const { id } = evt.data
+
+    if (!id) {
+      return new Response('Error: No user ID provided in payload', { status: 400 })
+    }
+
+    try {
+      await prisma.user.delete({
+        where: { clerkId: id },
+      })
+    } catch (error) {
+      // 🟢 KEEP THIS FOREVER
+      console.error('❌ Error deleting user:', error)
+      return new Response('Error', { status: 500 })
+    }
+  }
+
+  return new Response('', { status: 200 })
 }

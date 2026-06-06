@@ -11,12 +11,9 @@ import { ROLE_LEVELS } from "../Constants/roles";
 
 export type AuthUser = {
   id: string;
-  clerkId: string;
-  email: string;
   name: string | null;
   avatarUrl: string | null;
   role: Role;
-  isActive: boolean;
 };
 
 /**
@@ -35,77 +32,44 @@ export const getCurrentUser = cache(async (): Promise<AuthUser> => {
 
   let user = await prisma.user.findUnique({
     where: { clerkId: userId },
-    select: {
-      id: true,
-      clerkId: true,
-      email: true,
-      name: true,
-      avatarUrl: true,
-      role: true,
-      isActive: true,
-    },
   });
 
   if (!user) {
-    // ─── SELF-HEALING FALLBACK ─────────────────────────────────────
-    // If the user exists in Clerk but not in our DB (e.g., local DB wiped, webhook failed),
-    // redirecting to /sign-in causes an infinite loop because proxy.ts redirects back to /dashboard.
-    // Instead, we fetch their details from Clerk and recreate them in the DB.
-    try {
-      const client = await clerkClient();
-      const clerkUser = await client.users.getUser(userId);
+    const client = await clerkClient();
+    const clerkUser = await client.users.getUser(userId);
 
-      const email = clerkUser.emailAddresses[0]?.emailAddress;
-      if (!email) {
-        throw new Error("No email found for Clerk user");
-      }
-
-      const adminEmail = process.env.ADMIN_EMAIL;
-      const role =
-        adminEmail && email.toLowerCase() === adminEmail.toLowerCase()
-          ? Role.ADMIN
-          : Role.MEMBER;
-
-      const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || null;
-
-      const newUser = await prisma.user.create({
-        data: {
-          clerkId: userId,
-          email,
-          name,
-          avatarUrl: clerkUser.imageUrl || null,
-          role,
-        },
-        select: {
-          id: true,
-          clerkId: true,
-          email: true,
-          name: true,
-          avatarUrl: true,
-          role: true,
-          isActive: true,
-        },
-      });
-
-      // Sync role back to Clerk publicMetadata
-      await client.users.updateUserMetadata(userId, {
-        publicMetadata: { role: newUser.role },
-      });
-
-      console.log(`[dal.ts] Self-healed user: ${email} (role: ${newUser.role})`);
-      user = newUser;
-    } catch (err) {
-      console.error("[dal.ts] Self-healing failed:", err);
-      // Catastrophic failure fallback
-      redirect("/sign-in");
+    const email = clerkUser.emailAddresses[0]?.emailAddress;
+    if (!email) {
+      throw new Error("Clerk user has no email address");
     }
+
+    const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || null;
+
+    user = await prisma.user.create({
+      data: {
+        clerkId: userId,
+        email,
+        name,
+        avatarUrl: clerkUser.imageUrl || null,
+        role: Role.MEMBER,
+      },
+    });
+
+    await client.users.updateUserMetadata(userId, {
+      publicMetadata: { role: Role.MEMBER },
+    });
   }
 
   if (!user.isActive) {
     redirect("/account-disabled");
   }
 
-  return user;
+  return {
+    id: user.id,
+    name: user.name,
+    avatarUrl: user.avatarUrl,
+    role: user.role,
+  };
 });
 
 /**

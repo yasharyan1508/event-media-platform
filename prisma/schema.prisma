@@ -33,6 +33,7 @@ model User {
   updatedAt       DateTime  @updatedAt
 
   ownedEvents         Event[]              @relation("EventOwner")
+  organizedEvents     Event[]              @relation("EventOrganizer")
   collaborations      EventCollaborator[]
   albums              Album[]              @relation("CreatedAlbums")
   media               Media[]              @relation("UploadedMedia")
@@ -59,6 +60,19 @@ model Event {
   coverImageUrl String?
   isPublished   Boolean             @default(false)
   
+  location      String              @default("")
+  startDateTime DateTime            @default(now())
+  endDateTime   DateTime            @default(now())
+  price         String              @default("")
+  isFree        Boolean             @default(false)
+  url           String?
+  
+  categoryId    String?
+  category      Category?           @relation(fields: [categoryId], references: [id])
+
+  organizerId   String?
+  organizer     User?               @relation("EventOrganizer", fields: [organizerId], references: [id])
+
   ownerId       String
   owner         User                @relation("EventOwner", fields: [ownerId], references: [id])
   collaborators EventCollaborator[]
@@ -68,7 +82,17 @@ model Event {
   updatedAt     DateTime            @updatedAt
   
   @@index([ownerId])
+  @@index([organizerId])
+  @@index([categoryId])
   @@map("events")
+}
+
+model Category {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  events  Event[]
+
+  @@map("categories")
 }
 
 enum CollaboratorRole {

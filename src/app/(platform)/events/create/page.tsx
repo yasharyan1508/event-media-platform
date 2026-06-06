@@ -15,7 +15,7 @@ export default async function CreateEventPage() {
             Event creation form coming in Module 3.
           </p>
           <p className="text-sm text-gray-400 mt-2">
-            Authenticated as: {user.email} ({user.role})
+            Authenticated as: {user.name || 'User'} ({user.role})
           </p>
         </div>
       </div>

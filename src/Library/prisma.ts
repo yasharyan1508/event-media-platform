@@ -7,7 +7,10 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClient(): PrismaClient {
   const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
-  return new PrismaClient({ adapter });
+  return new PrismaClient({
+    adapter,
+    log: ['query', 'error'],
+  });
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();

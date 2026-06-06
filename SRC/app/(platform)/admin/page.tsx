@@ -15,7 +15,7 @@ export default async function AdminPage() {
             Admin panel with user management coming in Module 3.
           </p>
           <p className="text-sm text-gray-400 mt-2">
-            Authenticated as: {user.email} (ADMIN)
+            Authenticated as: {user.name || 'User'} (ADMIN)
           </p>
         </div>
       </div>

@@ -12,23 +12,17 @@ export default async function DashboardPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-gray-600 mt-1">
-              Welcome back, {user.name || user.email}
+              Welcome back, {user.name || "User"}
             </p>
           </div>
           <UserButton />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="rounded-lg border bg-white p-6 shadow-sm">
             <h3 className="text-sm font-medium text-gray-500">Role</h3>
             <p className="mt-1 text-lg font-semibold text-gray-900">
               {ROLE_LABELS[user.role]}
-            </p>
-          </div>
-          <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-medium text-gray-500">Email</h3>
-            <p className="mt-1 text-lg font-semibold text-gray-900 truncate">
-              {user.email}
             </p>
           </div>
           <div className="rounded-lg border bg-white p-6 shadow-sm">
