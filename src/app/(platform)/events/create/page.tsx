@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/src/Library/dal"
-import { EventForm } from "@/src/components/events/EventForm"
-import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card"
+import { EventForm } from "@/src/Components/events/EventForm"
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/Components/UI/card"
 
 export default async function CreateEventPage() {
   const user = await getCurrentUser()

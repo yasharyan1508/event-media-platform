@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/src/Library/dal"
 import { prisma } from "@/src/Library/prisma"
-import { Button } from "@/src/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card"
+import { Button } from "@/src/Components/UI/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/Components/UI/card"
 import Link from "next/link"
 
 export default async function EventsDashboard() {
@@ -37,9 +37,9 @@ export default async function EventsDashboard() {
           {events.map((event) => (
             <Card key={event.id} className="overflow-hidden flex flex-col group hover:shadow-lg transition-shadow">
               <div className="relative w-full h-48 bg-muted border-b">
-                {event.imageUrl ? (
+                {event.coverImageUrl ? (
                   <img
-                    src={event.imageUrl}
+                    src={event.coverImageUrl}
                     alt={event.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />

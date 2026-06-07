@@ -1,0 +1,400 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Create New Event - Glacier</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,600;0,700;0,800;1,400&amp;family=Nunito+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#e4e0d8",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#221a05",
+                        "on-secondary-fixed-variant": "#4a4538",
+                        "on-tertiary-fixed-variant": "#554020",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed": "#1e1a13",
+                        "primary-container": "#78a886",
+                        "outline-variant": "#c4c8bc",
+                        "secondary-container": "#f0e8db",
+                        "error": "#b83230",
+                        "surface-bright": "#faf6f0",
+                        "surface-dim": "#dbd7cf",
+                        "inverse-on-surface": "#f5f0e8",
+                        "surface-variant": "#e4e0d8",
+                        "surface-container-high": "#eae6de",
+                        "secondary-fixed": "#f0e8db",
+                        "primary-fixed": "#c8e8d0",
+                        "on-primary-fixed": "#002110",
+                        "on-error": "#ffffff",
+                        "surface-tint": "#4a7c59",
+                        "secondary-fixed-dim": "#d4ccbf",
+                        "on-secondary-container": "#5e5548",
+                        "tertiary-fixed": "#f8e0a8",
+                        "primary-fixed-dim": "#8ecf9e",
+                        "error-container": "#ffdad8",
+                        "outline": "#74796e",
+                        "inverse-primary": "#8ecf9e",
+                        "tertiary": "#705c30",
+                        "surface": "#faf6f0",
+                        "on-primary-fixed-variant": "#2a6038",
+                        "secondary": "#6b6358",
+                        "surface-container": "#f0ece4",
+                        "on-surface": "#2e3230",
+                        "on-error-container": "#690005",
+                        "on-primary": "#ffffff",
+                        "on-background": "#2e3230",
+                        "tertiary-container": "#c4a66a",
+                        "surface-container-low": "#f5f1ea",
+                        "on-tertiary": "#ffffff",
+                        "primary": "#4a7c59",
+                        "background": "#faf6f0",
+                        "on-tertiary-container": "#554020",
+                        "on-primary-container": "#d8f0de"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.75rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Literata", "serif"],
+                        "display": ["Literata", "serif"],
+                        "body": ["Nunito Sans", "sans-serif"],
+                        "label": ["Nunito Sans", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+            font-family: 'Nunito Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Literata', serif;
+        }
+
+        /* Organic Glassmorphism */
+        .glass-panel {
+            background: rgba(240, 236, 228, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(74, 124, 89, 0.1);
+        }
+
+        .glass-elevated {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(74, 124, 89, 0.15);
+            box-shadow: 0 10px 30px rgba(74, 124, 89, 0.05);
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(116, 121, 110, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .glass-input:focus {
+            border-color: theme('colors.primary');
+            box-shadow: 0 0 0 2px rgba(74, 124, 89, 0.1);
+            outline: none;
+        }
+
+        .glow-button {
+            background: theme('colors.primary');
+            color: theme('colors.on-primary');
+            transition: all 0.3s ease;
+        }
+
+        .glow-button:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 4px 12px rgba(74, 124, 89, 0.2);
+        }
+
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: theme('colors.surface-container-low');
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.outline-variant');
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.outline');
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col font-body">
+<!-- TopNavBar -->
+<nav class="bg-surface/80 backdrop-blur-md text-primary font-headline text-xl font-bold tracking-tight fixed top-0 w-full z-50 border-b border-primary/10 shadow-sm flex justify-between items-center px-6 h-16 hidden md:flex">
+<div class="flex items-center gap-4">
+
+</div>
+<div class="flex items-center gap-6">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="glass-input text-on-surface text-sm rounded-full py-1.5 pl-9 pr-4 w-64 focus:outline-none" placeholder="Search..." type="text">
+</div>
+<div class="flex items-center gap-4 text-secondary">
+<button class="hover:bg-primary/10 transition-colors active:scale-95 duration-200 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="hover:bg-primary/10 transition-colors active:scale-95 duration-200 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+<button class="glow-button text-sm font-semibold py-1.5 px-5 rounded-full active:scale-95 duration-200">
+            Create
+        </button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/20">
+<img alt="User profile avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNtfhKLwKTes9QPyEHntLOUGcthI4yByOPbf_dSanlBjj0sm7HIawD79XfIUBZwW4vlhRZ59J9pxTj6of0-3AoEEwc3gSvFzigEABTxAkqnXcna0KyVZK5O1lFsmLn_zDy1Bu1oxxQ2ceyjJl5KDfm8o13QXbJlD4NH0T_1dG8krb3Zb1IZTjPcN4poYilRW3ZV6-G2SP1tXkf0Oy-Oi3qFfWef1aanB_cIQWEI_jK9t9MtOaCHjgmLSJZ2-l9us3Bh16uQMrg84g">
+</div>
+</div>
+</nav>
+<!-- SideNavBar & Main Content Wrapper -->
+<div class="flex flex-1 pt-16">
+<!-- SideNavBar -->
+<aside class="bg-surface-container-low fixed left-0 top-16 h-[calc(100vh-64px)] w-64 border-r border-outline-variant/30 flex flex-col py-6 gap-2 hidden md:flex z-40">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary">spa</span>
+</div>
+<div><h2 class="text-on-surface font-headline font-bold text-base leading-tight">Menu</h2></div>
+</div>
+<nav class="flex-1 px-3 space-y-1">
+<a class="bg-primary/10 text-primary border-r-4 border-primary py-3 px-4 flex items-center gap-3 rounded-l-lg transition-all" href="#">
+<span class="material-symbols-outlined">event</span>
+<span class="font-bold">Events</span>
+</a>
+<a class="text-secondary py-3 px-4 flex items-center gap-3 rounded-lg hover:bg-surface-container transition-all" href="#">
+<span class="material-symbols-outlined">perm_media</span>
+<span class="">Media Gallery</span>
+</a>
+<a class="text-secondary py-3 px-4 flex items-center gap-3 rounded-lg hover:bg-surface-container transition-all" href="#">
+<span class="material-symbols-outlined">insights</span>
+<span class="">Analytics</span>
+</a>
+<a class="text-secondary py-3 px-4 flex items-center gap-3 rounded-lg hover:bg-surface-container transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="">Settings</span>
+</a>
+</nav>
+<div class="px-6 mt-auto mb-6">
+<button class="w-full glow-button font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 active:scale-95 duration-200">
+<span class="material-symbols-outlined text-sm">add</span>
+                New Event
+            </button>
+</div>
+<div class="px-3 space-y-1">
+<a class="text-secondary py-2 px-4 flex items-center gap-3 rounded-lg hover:bg-surface-container transition-all text-sm" href="#">
+<span class="material-symbols-outlined text-sm">contact_support</span>
+<span class="">Support</span>
+</a>
+<a class="text-secondary py-2 px-4 flex items-center gap-3 rounded-lg hover:bg-surface-container transition-all text-sm" href="#">
+<span class="material-symbols-outlined text-sm">logout</span>
+<span class="">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 relative">
+<div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,_rgba(74,124,89,0.08),_transparent)]"></div>
+<div class="relative z-10 h-full p-6 lg:p-10 max-w-7xl mx-auto">
+<header class="mb-10">
+<h1 class="font-headline text-3xl md:text-4xl font-extrabold text-on-surface tracking-tight mb-2">Create New Event</h1>
+<p class="text-secondary font-body text-base">Configure details and publish your upcoming organic experience.</p>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full pb-20">
+<!-- Left Column: Form -->
+<div class="lg:col-span-7 space-y-8">
+<div class="glass-elevated rounded-xl p-8 space-y-6">
+<!-- Event Title -->
+<div>
+<label class="block text-sm font-bold text-on-surface mb-2 font-label" for="event-title">Event Title</label>
+<input class="w-full glass-input rounded-xl text-on-surface text-lg py-4 px-5 placeholder:text-outline/50 focus:ring-0 font-body" id="event-title" placeholder="e.g. Terra Sustainable Living Expo" type="text">
+</div>
+<!-- Description -->
+<div>
+<label class="block text-sm font-bold text-on-surface mb-2 font-label" for="event-desc">Description</label>
+<textarea class="w-full glass-input rounded-xl text-on-surface py-3 px-5 placeholder:text-outline/50 focus:ring-0 resize-none font-body" id="event-desc" placeholder="Detail the core focus and schedule..." rows="4"></textarea>
+</div>
+<!-- Media Upload -->
+<div>
+<label class="block text-sm font-bold text-on-surface mb-2 font-label">Media Cover</label>
+<div class="w-full border-2 border-dashed border-primary/20 rounded-xl bg-surface-container-low/50 hover:bg-surface-container/50 transition-colors p-10 flex flex-col items-center justify-center cursor-pointer group">
+<div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">local_florist</span>
+</div>
+<p class="text-on-surface font-semibold mb-1 font-body">Drag &amp; drop or click to upload cover photo</p>
+<p class="text-secondary text-xs font-body">Natural high-res imagery preferred</p>
+</div>
+</div>
+<!-- Location -->
+<div>
+<label class="block text-sm font-bold text-on-surface mb-2 font-label" for="event-location">Location</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-secondary">location_on</span>
+<input class="w-full glass-input rounded-xl text-on-surface py-3 pl-12 pr-5 placeholder:text-outline/50 focus:ring-0 font-body" id="event-location" placeholder="Search venue or address..." type="text">
+</div>
+</div>
+<!-- Date & Time Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block text-sm font-bold text-on-surface mb-2 font-label">Start Date &amp; Time</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-secondary">calendar_today</span>
+<input class="w-full glass-input rounded-xl text-on-surface py-3 pl-12 pr-5 focus:ring-0 font-body" type="datetime-local">
+</div>
+</div>
+<div>
+<label class="block text-sm font-bold text-on-surface mb-2 font-label">End Date &amp; Time</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-secondary">calendar_today</span>
+<input class="w-full glass-input rounded-xl text-on-surface py-3 pl-12 pr-5 focus:ring-0 font-body" type="datetime-local">
+</div>
+</div>
+</div>
+<!-- Pricing & Category Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-outline-variant/30 pt-6">
+<div>
+<div class="flex items-center justify-between mb-2">
+<label class="block text-sm font-bold text-on-surface font-label" for="event-price">Price ($)</label>
+<div class="flex items-center gap-2">
+<span class="text-xs text-secondary font-label">Free Entry</span>
+<button aria-pressed="false" class="w-10 h-6 rounded-full bg-surface-container-highest relative transition-all focus:outline-none focus:ring-2 focus:ring-primary/30" type="button">
+<span class="absolute left-1 top-1 bg-secondary w-4 h-4 rounded-full transition-all"></span>
+</button>
+</div>
+</div>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 text-secondary font-bold">$</span>
+<input class="w-full glass-input rounded-xl text-on-surface py-3 pl-8 pr-5 placeholder:text-outline/50 focus:ring-0 font-body" id="event-price" placeholder="0.00" type="number">
+</div>
+</div>
+<div>
+<label class="block text-sm font-bold text-on-surface mb-2 font-label">Category</label>
+<div class="relative">
+<select class="w-full glass-input rounded-xl text-on-surface py-3 pl-5 pr-10 appearance-none focus:ring-0 bg-transparent cursor-pointer font-body">
+<option class="bg-surface text-secondary" disabled="" selected="" value="">Select Theme</option>
+<option class="bg-surface text-on-surface" value="eco">Sustainability</option>
+<option class="bg-surface text-on-surface" value="wellness">Wellness</option>
+<option class="bg-surface text-on-surface" value="community">Community</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">keyboard_arrow_down</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Submit Button -->
+<button class="w-full glow-button font-headline font-bold text-lg py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg active:scale-[0.98]">
+                        Publish Rooted Experience
+                        <span class="material-symbols-outlined">nature_people</span>
+</button>
+</div>
+<!-- Right Column: Live Preview Sticky Sidebar -->
+<div class="lg:col-span-5 relative hidden lg:block">
+<div class="sticky top-24 space-y-6">
+<div class="flex items-center gap-2 text-secondary mb-4">
+<span class="material-symbols-outlined text-sm">visibility</span>
+<span class="text-xs font-bold tracking-widest uppercase font-label">Live Preview</span>
+</div>
+<!-- Preview Card -->
+<div class="glass-elevated rounded-xl overflow-hidden group border border-outline-variant/20 shadow-xl">
+<!-- Image Header -->
+<div class="h-56 relative overflow-hidden bg-surface-container">
+<img alt="Event cover preview" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPaV5tAbx1Ggi-AE3f9sEe0B23xWCwQ7k2ptcB2c7QS37jNKkmtc7evQVPZElgW03UPIyW-9x6BaMnNpkSJR98hnxLw8AFssGpEccjMTScmMIV37hYnMaPh9AHN8bz5VCKRiU7KGgTOTVfytOxedhENFL_oBJficF8ZXL-klYO_4cQ3xoG_Hj58EIxR-WbRXFw2oovAZpF2-jPrx98_MOxUifmATar4vvKtdD0vBb-Zd1eLnAz27ELsQm11uMNSP3-W0dKcaRxXmU">
+<div class="absolute inset-0 bg-gradient-to-t from-white/90 to-transparent"></div>
+<div class="absolute top-4 right-4 bg-white/90 backdrop-blur-md border border-primary/20 text-primary px-4 py-1.5 rounded-full text-xs font-extrabold shadow-sm flex items-center gap-1 font-label">
+<span class="material-symbols-outlined text-[14px]">payments</span>
+                                    $299
+                                </div>
+</div>
+<!-- Card Body -->
+<div class="p-8 relative">
+<!-- Date Badge -->
+<div class="absolute -top-12 left-8 bg-primary/95 text-on-primary rounded-xl px-4 py-3 text-center shadow-lg w-16">
+<div class="text-[10px] font-bold uppercase tracking-wider mb-0.5 font-label opacity-90">Nov</div>
+<div class="text-2xl font-black leading-none font-headline">15</div>
+</div>
+<div class="mt-4">
+<div class="inline-flex items-center gap-1.5 text-primary text-xs font-bold bg-primary/10 px-3 py-1 rounded-full mb-4 border border-primary/20 font-label">
+<span class="material-symbols-outlined text-[14px]">eco</span>
+                                        Sustainability
+                                    </div>
+<h3 class="font-headline text-2xl font-bold text-on-surface mb-3 leading-tight" id="preview-title">Terra Sustainable Living Expo</h3>
+<div class="space-y-3 mt-5">
+<div class="flex items-start gap-3 text-sm text-secondary font-medium font-body">
+<span class="material-symbols-outlined text-base mt-0.5 text-primary">schedule</span>
+<span class="">9:00 AM - 5:00 PM PST</span>
+</div>
+<div class="flex items-start gap-3 text-sm text-secondary font-medium font-body">
+<span class="material-symbols-outlined text-base mt-0.5 text-primary">location_on</span>
+<span class="">The Botanical Gardens, SF</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Placeholder Context -->
+<div class="text-center p-8 border border-dashed border-primary/20 rounded-xl bg-surface-container-low/50">
+<span class="material-symbols-outlined text-primary/40 text-4xl mb-3">grid_view</span>
+<p class="text-sm text-secondary font-semibold font-body">Card preview in the discovery ecosystem.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggles = document.querySelectorAll('button[aria-pressed]');
+        toggles.forEach(toggle => {
+            toggle.addEventListener('click', (e) => {
+                const isPressed = toggle.getAttribute('aria-pressed') === 'true';
+                toggle.setAttribute('aria-pressed', !isPressed);
+                const indicator = toggle.querySelector('span');
+                
+                if (!isPressed) {
+                    toggle.classList.remove('bg-surface-container-highest');
+                    toggle.classList.add('bg-primary');
+                    indicator.classList.remove('left-1', 'bg-secondary');
+                    indicator.classList.add('translate-x-4', 'bg-on-primary');
+                } else {
+                    toggle.classList.add('bg-surface-container-highest');
+                    toggle.classList.remove('bg-primary');
+                    indicator.classList.add('left-1', 'bg-secondary');
+                    indicator.classList.remove('translate-x-4', 'bg-on-primary');
+                }
+            });
+        });
+
+        // Basic live preview update
+        const titleInput = document.getElementById('event-title');
+        const previewTitle = document.getElementById('preview-title');
+        
+        if(titleInput && previewTitle) {
+            titleInput.addEventListener('input', (e) => {
+                previewTitle.textContent = e.target.value || 'Terra Sustainable Living Expo';
+            });
+        }
+    });
+</script>
+
+
+</body></html>

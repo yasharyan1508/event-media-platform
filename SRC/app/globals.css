@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Nunito+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 @import "tailwindcss";
 @config "../../tailwind.config.ts";
 
@@ -64,7 +66,78 @@
   }
 
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background-color: theme('colors.background');
+    color: theme('colors.on-background');
+    font-family: 'Nunito Sans', sans-serif;
+    overflow-x: hidden;
   }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Literata', serif;
+  }
+}
+
+@layer components {
+
+  /* Organic Glassmorphism */
+  .glass-panel {
+    background: rgba(240, 236, 228, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(74, 124, 89, 0.1);
+  }
+
+  .glass-elevated {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(74, 124, 89, 0.15);
+    box-shadow: 0 10px 30px rgba(74, 124, 89, 0.05);
+  }
+
+  .glass-input {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(116, 121, 110, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .glass-input:focus {
+    border-color: theme('colors.primary');
+    box-shadow: 0 0 0 2px rgba(74, 124, 89, 0.1);
+    outline: none;
+  }
+
+  .glow-button {
+    background: theme('colors.primary');
+    color: theme('colors.on-primary');
+    transition: all 0.3s ease;
+  }
+
+  .glow-button:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 12px rgba(74, 124, 89, 0.2);
+  }
+}
+
+/* Hide scrollbar for clean UI */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: theme('colors.surface-container-low');
+}
+
+::-webkit-scrollbar-thumb {
+  background: theme('colors.outline-variant');
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.outline');
 }
