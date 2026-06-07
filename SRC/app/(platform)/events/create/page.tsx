@@ -1,24 +1,21 @@
-import { requirePermission } from "@/src/Library/dal";
-import { Permission } from "@/src/Constants/permissions";
+import { getCurrentUser } from "@/src/Library/dal"
+import { EventForm } from "@/src/components/events/EventForm"
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card"
 
 export default async function CreateEventPage() {
-  const user = await requirePermission(Permission.EVENT_CREATE);
+  const user = await getCurrentUser()
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="mx-auto max-w-2xl">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          Create New Event
-        </h1>
-        <div className="rounded-lg border bg-white p-6 shadow-sm">
-          <p className="text-gray-600">
-            Event creation form coming in Module 3.
-          </p>
-          <p className="text-sm text-gray-400 mt-2">
-            Authenticated as: {user.name || 'User'} ({user.role})
-          </p>
-        </div>
-      </div>
+    <div className="max-w-3xl mx-auto p-4 md:p-8">
+      <Card className="shadow-lg border-muted/50">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold tracking-tight">Create New Event</CardTitle>
+          <p className="text-sm text-muted-foreground">Fill in the details to publish your next great event.</p>
+        </CardHeader>
+        <CardContent>
+          <EventForm type="Create" userId={user.id} />
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }
