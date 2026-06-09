@@ -1,80 +1,77 @@
-import { getCurrentUser } from "@/src/Library/dal"
-import { prisma } from "@/src/Library/prisma"
-import { Button } from "@/src/Components/UI/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/src/Components/UI/card"
-import Link from "next/link"
+import { Suspense } from "react";
+import Link from "next/link";
+import { getMyEvents } from "@/src/Action/event/get-events";
+import EventCard from "@/src/Components/events/EventCard";
 
-export default async function EventsDashboard() {
-  // Enforce auth
-  await getCurrentUser()
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="p-6 bg-red-50 text-red-600 border border-red-200 rounded-xl">
+      <h2 className="font-bold text-lg mb-2">Error</h2>
+      <p>{message}</p>
+    </div>
+  );
+}
 
-  // Fetch events
-  const events = await prisma.event.findMany({
-    orderBy: { createdAt: "desc" },
-  })
+async function EventsGrid() {
+  const result = await getMyEvents();
+
+  if ("error" in result) {
+    return <ErrorState message={result.error} />;
+  }
+
+  if (!result.data || result.data.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-4 border-2 border-dashed rounded-xl bg-gray-50 dark:bg-gray-900 dark:border-gray-800 text-center">
+        <h3 className="text-xl font-bold mb-2">No events found</h3>
+        <p className="text-gray-500 mb-6 max-w-md">
+          Get started by creating your first event to share media and memories.
+        </p>
+        <Link 
+          href="/events/create" 
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+        >
+          Create your first event
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Events Dashboard</h1>
-        <Button asChild className="w-full sm:w-auto">
-          <Link href="/events/create">Create New Event</Link>
-        </Button>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {result.data.map((event) => (
+        <EventCard 
+          key={event.id} 
+          event={{
+            id: event.id,
+            title: event.title,
+            location: event.location,
+            startDate: event.startDateTime,
+            coverImageUrl: event.coverImageUrl,
+            isPublished: event.isPublished,
+            _count: event._count
+          }} 
+        />
+      ))}
+    </div>
+  );
+}
+
+export default function EventsPage() {
+  return (
+    <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">My Events</h1>
+        <Link 
+          href="/events/create"
+          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-sm"
+        >
+          Create Event
+        </Link>
       </div>
 
-      {events.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 border rounded-lg bg-muted/20 text-center">
-          <h3 className="text-2xl font-semibold mb-2">No events found</h3>
-          <p className="text-muted-foreground mb-6 max-w-md">
-            You haven't created any events yet. Get started by creating your first event to share with the community.
-          </p>
-          <Button asChild size="lg">
-            <Link href="/events/create">Create Your First Event</Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event) => (
-            <Card key={event.id} className="overflow-hidden flex flex-col group hover:shadow-lg transition-shadow">
-              <div className="relative w-full h-48 bg-muted border-b">
-                {event.coverImageUrl ? (
-                  <img
-                    src={event.coverImageUrl}
-                    alt={event.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/50">
-                    <span className="text-sm font-medium">No Cover Image</span>
-                  </div>
-                )}
-              </div>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-xl line-clamp-1">{event.title}</CardTitle>
-                <div className="text-sm font-medium text-primary mt-1">
-                  {new Date(event.startDateTime).toLocaleDateString(undefined, { 
-                    weekday: 'short', 
-                    month: 'short', 
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow flex flex-col justify-between">
-                <p className="text-muted-foreground line-clamp-2 text-sm mb-4">
-                  {event.location}
-                </p>
-                <div className="flex items-center justify-between mt-auto pt-4 border-t">
-                  <span className={`font-semibold ${event.isFree ? 'text-green-600 dark:text-green-400' : 'text-foreground'}`}>
-                    {event.isFree ? "FREE" : `$${event.price}`}
-                  </span>
-                  <Button variant="outline" size="sm">View Details</Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  )
+      <Suspense fallback={<div className="py-20 text-center text-gray-500 font-medium text-lg">Loading events...</div>}>
+        <EventsGrid />
+      </Suspense>
+    </main>
+  );
 }

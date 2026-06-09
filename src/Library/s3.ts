@@ -1,4 +1,4 @@
-import { S3Client } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 export const S3_BUCKET_NAME = process.env.AWS_BUCKET_NAME!;
 
@@ -23,9 +23,43 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export function buildPublicUrl(s3Key: string): string {
+  if (s3Key.startsWith("http://") || s3Key.startsWith("https://")) {
+    return s3Key;
+  }
   return `https://${S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
 }
 
 export function sanitizeFilename(filename: string): string {
   return filename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+}
+
+export async function downloadMediaBuffer(s3Key: string): Promise<Buffer> {
+  const command = new GetObjectCommand({
+    Bucket: S3_BUCKET_NAME,
+    Key: s3Key,
+  });
+
+  const response = await s3Client.send(command);
+  
+  if (!response.Body) {
+    throw new Error(`Failed to retrieve file from S3: ${s3Key}`);
+  }
+
+  const stream = response.Body as unknown as NodeJS.ReadableStream;
+  const chunks: Buffer[] = [];
+  
+  for await (const chunk of stream) {
+    chunks.push(Buffer.from(chunk));
+  }
+  
+  return Buffer.concat(chunks);
+}
+
+export async function deleteMediaFromS3(s3Key: string): Promise<void> {
+  const command = new DeleteObjectCommand({
+    Bucket: S3_BUCKET_NAME,
+    Key: s3Key,
+  });
+
+  await s3Client.send(command);
 }

@@ -1,0 +1,17 @@
+CREATE TYPE "MediaStatus" AS ENUM (
+'PENDING',
+'PROCESSING',
+'READY',
+'FAILED'
+);
+
+ALTER TABLE media ALTER COLUMN status DROP DEFAULT;
+
+ALTER TABLE media
+ALTER COLUMN status
+TYPE "MediaStatus"
+USING status::text::"MediaStatus";
+
+ALTER TABLE media
+ALTER COLUMN status
+SET DEFAULT 'PROCESSING'::"MediaStatus";

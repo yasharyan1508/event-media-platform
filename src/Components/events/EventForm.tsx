@@ -15,8 +15,8 @@ import {
 import { Input } from "@/src/Components/UI/input"
 import { Textarea } from "@/src/Components/UI/textarea"
 import { Checkbox } from "@/src/Components/UI/checkbox"
-import { eventFormSchema } from "@/lib/validator"
-import { createEvent } from "@/lib/actions/event.actions"
+import { createEventSchema } from "@/src/Schemas/event/event.schema"
+import { createEvent } from "@/src/Action/event/create-event"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { FileUploader } from "@/src/Components/shared/FileUploader"
@@ -47,7 +47,7 @@ export function EventForm({ type, event, userId }: EventFormProps) {
       title: "",
       description: "",
       location: "",
-      imageUrl: "",
+      coverImageS3Key: "",
       startDateTime: new Date(),
       endDateTime: new Date(),
       categoryId: "", // Temporarily required by schema
@@ -56,23 +56,22 @@ export function EventForm({ type, event, userId }: EventFormProps) {
       url: "",
     }
 
-  const form = useForm<z.infer<typeof eventFormSchema>>({
-    resolver: zodResolver(eventFormSchema),
+  const form = useForm<z.infer<typeof createEventSchema>>({
+    resolver: zodResolver(createEventSchema),
     defaultValues: initialValues,
   })
 
-  async function onSubmit(values: z.infer<typeof eventFormSchema>) {
+  async function onSubmit(values: z.infer<typeof createEventSchema>) {
     setIsPending(true)
     try {
       if (type === "Create") {
-        await createEvent({
-          event: values,
-          userId,
-          path: "/events"
-        })
-        router.push("/events")
+        const result = await createEvent(values);
+        if ("error" in result) {
+          alert(result.error);
+          return;
+        }
+        router.push(`/events/${result.eventId}`)
       } else {
-        // Handle Update action when implemented on backend
         console.log("Update event", values)
       }
     } catch (error) {
@@ -82,11 +81,11 @@ export function EventForm({ type, event, userId }: EventFormProps) {
     }
   }
 
-  // Format date to YYYY-MM-DDThh:mm for datetime-local input
-  const formatDateForInput = (date: Date) => {
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16)
+  function formatDateForInput(value: string | null | undefined): string {
+    if (!value) return "";
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return "";
+    return date.toISOString().slice(0, 16);
   }
 
   const title = useWatch({ control: form.control, name: "title" }) || "Terra Sustainable Living Expo"
@@ -95,7 +94,7 @@ export function EventForm({ type, event, userId }: EventFormProps) {
   const endDateTime = useWatch({ control: form.control, name: "endDateTime" })
   const price = useWatch({ control: form.control, name: "price" })
   const isFree = useWatch({ control: form.control, name: "isFree" })
-  const imageUrl = useWatch({ control: form.control, name: "imageUrl" })
+  const coverImageS3Key = useWatch({ control: form.control, name: "coverImageS3Key" })
 
   const previewMonth = startDateTime ? new Date(startDateTime).toLocaleString('default', { month: 'short' }) : 'Nov'
   const previewDay = startDateTime ? new Date(startDateTime).getDate() : '15'
@@ -109,7 +108,15 @@ export function EventForm({ type, event, userId }: EventFormProps) {
     : '9:00 AM - 5:00 PM PST'
 
   const previewPrice = isFree ? "Free" : (price ? `$${price}` : "$299")
-  const previewImage = imageUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuDPaV5tAbx1Ggi-AE3f9sEe0B23xWCwQ7k2ptcB2c7QS37jNKkmtc7evQVPZElgW03UPIyW-9x6BaMnNpkSJR98hnxLw8AFssGpEccjMTScmMIV37hYnMaPh9AHN8bz5VCKRiU7KGgTOTVfytOxedhENFL_oBJficF8ZXL-klYO_4cQ3xoG_Hj58EIxR-WbRXFw2oovAZpF2-jPrx98_MOxUifmATar4vvKtdD0vBb-Zd1eLnAz27ELsQm11uMNSP3-W0dKcaRxXmU"
+  const previewImage = coverImageS3Key || "https://lh3.googleusercontent.com/aida-public/AB6AXuDPaV5tAbx1Ggi-AE3f9sEe0B23xWCwQ7k2ptcB2c7QS37jNKkmtc7evQVPZElgW03UPIyW-9x6BaMnNpkSJR98hnxLw8AFssGpEccjMTScmMIV37hYnMaPh9AHN8bz5VCKRiU7KGgTOTVfytOxedhENFL_oBJficF8ZXL-klYO_4cQ3xoG_Hj58EIxR-WbRXFw2oovAZpF2-jPrx98_MOxUifmATar4vvKtdD0vBb-Zd1eLnAz27ELsQm11uMNSP3-W0dKcaRxXmU"
+
+  if (!mounted) {
+    return (
+      <div className="w-full h-[600px] flex items-center justify-center text-secondary font-semibold">
+        Loading editor...
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
@@ -148,7 +155,7 @@ export function EventForm({ type, event, userId }: EventFormProps) {
 
             <FormField
               control={form.control}
-              name="imageUrl"
+              name="coverImageS3Key"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="block text-sm font-bold text-on-surface mb-2 font-label">Media Cover</FormLabel>
@@ -271,7 +278,6 @@ export function EventForm({ type, event, userId }: EventFormProps) {
               />
             </div>
 
-            {/* Temporarily needed to fulfill Zod schema requirements silently */}
             <div className="hidden">
               <FormField
                 control={form.control}
@@ -313,9 +319,7 @@ export function EventForm({ type, event, userId }: EventFormProps) {
               <span className="text-xs font-bold tracking-widest uppercase font-label">Live Preview</span>
             </div>
 
-            {/* Preview Card */}
             <div className="glass-elevated rounded-xl overflow-hidden group border border-outline-variant/20 shadow-xl">
-              {/* Image Header */}
               <div className="h-56 relative overflow-hidden bg-surface-container">
                 <img alt="Event cover preview" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" src={previewImage} />
                 <div className="absolute inset-0 bg-gradient-to-t from-white/90 to-transparent"></div>
@@ -325,12 +329,10 @@ export function EventForm({ type, event, userId }: EventFormProps) {
                 </div>
               </div>
 
-              {/* Card Body */}
               <div className="p-8 relative">
-                {/* Date Badge */}
                 <div className="absolute -top-12 left-8 bg-primary/95 text-on-primary rounded-xl px-4 py-3 text-center shadow-lg w-16">
-                  <div className="text-[10px] font-bold uppercase tracking-wider mb-0.5 font-label opacity-90">{mounted ? previewMonth : "..."}</div>
-                  <div className="text-2xl font-black leading-none font-headline">{mounted ? previewDay : "..."}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider mb-0.5 font-label opacity-90">{previewMonth}</div>
+                  <div className="text-2xl font-black leading-none font-headline">{previewDay}</div>
                 </div>
 
                 <div className="mt-4">
@@ -344,7 +346,7 @@ export function EventForm({ type, event, userId }: EventFormProps) {
                   <div className="space-y-3 mt-5">
                     <div className="flex items-start gap-3 text-sm text-secondary font-medium font-body">
                       <span className="material-symbols-outlined text-base mt-0.5 text-primary">schedule</span>
-                      <span className="">{mounted ? previewTime : "Loading..."}</span>
+                      <span className="">{previewTime}</span>
                     </div>
 
                     <div className="flex items-start gap-3 text-sm text-secondary font-medium font-body">
@@ -356,7 +358,6 @@ export function EventForm({ type, event, userId }: EventFormProps) {
               </div>
             </div>
 
-            {/* Placeholder Context */}
             <div className="text-center p-8 border border-dashed border-primary/20 rounded-xl bg-surface-container-low/50">
               <span className="material-symbols-outlined text-primary/40 text-4xl mb-3">grid_view</span>
               <p className="text-sm text-secondary font-semibold font-body">Card preview in the discovery ecosystem.</p>

@@ -40,7 +40,8 @@ model User {
   likes               Like[]
   favorites           Favorite[]
   comments            Comment[]
-  notifications       Notification[]       @relation("RecipientNotifications")
+  notifications       Notification[]       @relation("UserNotifications")
+  actorActions        Notification[]       @relation("ActorNotifications")
   faceIndexes         FaceIndex[]
   auditLogs           AuditLog[]           @relation("ActorLogs")
   bulkUploadJobs      BulkUploadJob[]
@@ -54,32 +55,36 @@ model User {
 // ─── EVENTS & COLLABORATION ────────────────────────────────────────────────
 
 model Event {
-  id            String              @id @default(cuid())
-  title         String
-  description   String?
-  coverImageUrl String?
-  isPublished   Boolean             @default(false)
+  id                   String              @id @default(cuid())
+  title                String
+  description          String?
+  coverImageUrl        String?
+  isPublished          Boolean             @default(false)
   
-  location      String              @default("")
-  startDateTime DateTime            @default(now())
-  endDateTime   DateTime            @default(now())
-  price         String              @default("")
-  isFree        Boolean             @default(false)
-  url           String?
+  location             String              @default("")
+  startDateTime        DateTime            @default(now())
+  endDateTime          DateTime            @default(now())
+  price                String              @default("")
+  isFree               Boolean             @default(false)
+  url                  String?
   
-  categoryId    String?
-  category      Category?           @relation(fields: [categoryId], references: [id])
+  aiSummary            String?
+  aiSummaryGeneratedAt DateTime?
+  aiSummaryModel       String?
+  
+  categoryId           String?
+  category             Category?           @relation(fields: [categoryId], references: [id])
 
-  organizerId   String?
-  organizer     User?               @relation("EventOrganizer", fields: [organizerId], references: [id])
+  organizerId          String?
+  organizer            User?               @relation("EventOrganizer", fields: [organizerId], references: [id])
 
-  ownerId       String
-  owner         User                @relation("EventOwner", fields: [ownerId], references: [id])
-  collaborators EventCollaborator[]
-  albums        Album[]
+  ownerId              String
+  owner                User                @relation("EventOwner", fields: [ownerId], references: [id])
+  collaborators        EventCollaborator[]
+  albums               Album[]
 
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
   
   @@index([ownerId])
   @@index([organizerId])
@@ -142,29 +147,42 @@ model Album {
   @@map("albums")
 }
 
-model Media {
-  id            String          @id @default(cuid())
-  filename      String
-  s3Key         String          @unique
-  url           String
-  mimeType      String
-  size          Int
-  width         Int?
-  height        Int?
-  status        String          @default("PROCESSING") // PROCESSING, READY, FAILED
-  
-  albumId       String
-  album         Album           @relation(fields: [albumId], references: [id], onDelete: Cascade)
-  uploaderId    String
-  uploader      User            @relation("UploadedMedia", fields: [uploaderId], references: [id])
-  
-  detectedFaces MediaFace[]
-  likes         Like[]
-  favorites     Favorite[]
-  comments      Comment[]
+enum MediaStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
 
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+model Media {
+  id              String          @id @default(cuid())
+  filename        String
+  s3Key           String          @unique
+  url             String
+  mimeType        String
+  size            Int
+  width           Int?
+  height          Int?
+  status          MediaStatus     @default(PROCESSING)
+  
+  aiCaption       String?
+  aiQualityScore  Int?
+  aiProcessedAt   DateTime?
+  aiVersion       String?
+  
+  albumId         String
+  album           Album           @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  uploaderId      String
+  uploader        User            @relation("UploadedMedia", fields: [uploaderId], references: [id])
+  
+  aiTags          AiTag[]
+  detectedFaces   MediaFace[]
+  likes           Like[]
+  favorites       Favorite[]
+  comments        Comment[]
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   
   @@index([albumId])
   @@index([uploaderId])
@@ -252,6 +270,7 @@ model MediaFace {
   faceIndexId     String?                // null = unidentified face
 
   confidence      Float
+  similarity      Float?
   boundingBox     Json
 
   createdAt       DateTime   @default(now())
@@ -259,6 +278,7 @@ model MediaFace {
   media           Media      @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   faceIndex       FaceIndex? @relation(fields: [faceIndexId], references: [id], onDelete: SetNull)
 
+  @@unique([mediaId, faceIndexId])
   @@index([mediaId])
   @@index([faceIndexId])
   @@map("media_faces")
@@ -298,6 +318,43 @@ model BulkUploadJob {
   @@map("bulk_upload_jobs")
 }
 
+model AiProcessingJob {
+  id          String      @id @default(cuid())
+  mediaId     String      @unique
+  status      JobStatus   @default(PENDING)
+  attempts    Int         @default(0)
+  errorLog    Json?
+  
+  createdAt   DateTime    @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("ai_processing_jobs")
+}
+
+enum AiSource {
+  GEMINI
+  REKOGNITION
+}
+
+model AiTag {
+  id         String   @id @default(cuid())
+  mediaId    String
+  label      String
+  confidence Float
+  source     AiSource @default(GEMINI)
+  createdAt  DateTime @default(now())
+
+  media      Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([mediaId])
+  @@index([label])
+  @@index([label, confidence])
+  @@map("ai_tags")
+}
+
 // ─── AUDIT & NOTIFICATIONS ─────────────────────────────────────────────────
 
 enum AuditAction {
@@ -316,6 +373,9 @@ enum AuditAction {
   FACE_INDEXED
   FACE_DELETED
   AI_TAG_TRIGGERED
+  AI_TAG_COMPLETED
+  AI_TAG_FAILED
+  AI_REANALYZED
 }
 
 model AuditLog {
@@ -345,26 +405,33 @@ enum NotificationType {
   FACE_MATCH
   BULK_UPLOAD_COMPLETE
   ROLE_CHANGED
+  AI_ANALYSIS_COMPLETE
+  AI_ANALYSIS_FAILED
+  LIKE
+  COMMENT
+  FOLLOW
+  MENTION
+  SYSTEM
 }
 
 model Notification {
   id          String           @id @default(cuid())
-  recipientId String
+  userId      String
+  actorId     String?          // Optional for system-generated events
   type        NotificationType
   
-  title       String
   message     String
-  
   isRead      Boolean          @default(false)
   
   metadata    Json?
   
   createdAt   DateTime         @default(now())
   
-  recipient   User             @relation("RecipientNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+  user        User             @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor       User?            @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: SetNull)
   
-  @@index([recipientId])
-  @@index([isRead])
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@index([userId])
   @@index([createdAt])
   @@map("notifications")
 }

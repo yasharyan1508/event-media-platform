@@ -1,0 +1,2 @@
+SELECT DISTINCT status FROM media ORDER BY status;
+SELECT COUNT(*) FROM media;
