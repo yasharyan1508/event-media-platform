@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { fetchSystemStats } from "@/src/Action/admin.actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/Components/UI/card";
 import { Users, Image as ImageIcon, BookOpen, CalendarDays } from "lucide-react";
@@ -18,7 +19,7 @@ export default async function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard Overview</h1>
-      
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* Users Card */}
         <Card className="shadow-sm">

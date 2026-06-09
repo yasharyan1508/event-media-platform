@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { fetchAuditLogs } from "@/src/Action/admin.actions";
 import {
   Table,
@@ -8,6 +9,8 @@ import {
   TableRow,
 } from "@/src/Components/UI/table";
 import { format } from "date-fns";
+
+
 
 export default async function AdminLogsPage() {
   const result = await fetchAuditLogs();
@@ -25,7 +28,7 @@ export default async function AdminLogsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight text-slate-900">Audit Logs</h1>
-      
+
       <div className="bg-white rounded-md border shadow-sm">
         <Table>
           <TableHeader>
